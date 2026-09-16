@@ -34,12 +34,17 @@ module uart_tx (
     // BLOCK 2: Next State Logic (Combinational)
     // --------------------------------------------------------
     always @(*) begin
-        next_state = current_state; // Default stay in current state
+        next_state = current_state; 
+        
         case (current_state)
-            IDLE:  if (tx_start)  next_state = START;
-            START: next_state = DATA;
-            DATA:  if (bit_index == 7) next_state = STOP;
-            STOP:  next_state = IDLE;
+            IDLE:  if (tx_start) next_state = START;
+            
+            // Only advance to the next state if the baud tick is HIGH
+            START: if (tick) next_state = DATA;
+            
+            DATA:  if (tick && bit_index == 7) next_state = STOP;
+            
+            STOP:  if (tick) next_state = IDLE;
         endcase
     end
 
@@ -73,9 +78,12 @@ module uart_tx (
                 end
 
                 DATA: begin
-                    tx_line   <= shift_reg[bit_index]; // Send LSB first
-                    bit_index <= bit_index + 1;
+                tx_line <= shift_reg[bit_index]; 
+                if (tick) begin 
+                    bit_index <= bit_index + 1; // Only shift on the baud tick
+                    end
                 end
+                
 
                 STOP: begin
                     tx_line   <= 1'b1; // Drive high for Stop bit
