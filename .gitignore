@@ -1,3 +1,7 @@
-sim/
+# Simulation Output Files
 *.out
 *.vcd
+
+# OS generated files
+.DS_Store
+Thumbs.db
