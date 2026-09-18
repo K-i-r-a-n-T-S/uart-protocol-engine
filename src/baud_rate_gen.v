@@ -11,7 +11,7 @@ module baud_rate_gen #(
 );
 
     // Calculate maximum count value (e.g., 868 - 1 = 867)
-    localparam MAX_COUNT = (CLK_FREQ / BAUD_RATE) - 1;
+    localparam MAX_COUNT = (CLK_FREQ / (BAUD_RATE * 16)) - 1;
     
     // 16-bit counter handles divisions up to 65,535 
     // (enough for a 100MHz clock down to 1525 baud)

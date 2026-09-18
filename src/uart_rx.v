@@ -44,15 +44,14 @@ module uart_rx (
             
             START: begin
                 if (tick_16x && tick_count == 4'd7) begin
-                    if (rx_line == 1'b0) // Still low? It's a valid start bit.
+                    if (rx_line == 1'b0) // Valid start bit
                         next_state = DATA;
-                    else                 // Glitch! Go back to IDLE.
+                    else                 // Glitch edge back to IDLE
                         next_state = IDLE; 
                 end
             end
             
             DATA: begin
-                // Wait 15 ticks to hit the middle of the next data bit
                 if (tick_16x && tick_count == 4'd15) begin
                     if (bit_index == 3'd7)
                         next_state = STOP;
@@ -77,7 +76,7 @@ module uart_rx (
             rx_data    <= 8'h00;
             rx_done    <= 1'b0;
         end else begin
-            rx_done <= 1'b0; // Default pulse to 0
+            rx_done <= 1'b0; // Fixed typo here
 
             case (current_state)
                 IDLE: begin
@@ -87,11 +86,10 @@ module uart_rx (
 
                 START: begin
                     if (tick_16x) begin
-                        if (tick_count == 4'd7) begin
-                            tick_count <= 4'd0; // Reset counter for the first data bit
-                        end else begin
+                        if (tick_count == 4'd7)
+                            tick_count <= 4'd0;
+                        else
                             tick_count <= tick_count + 1'b1;
-                        end
                     end
                 end
 
@@ -99,9 +97,13 @@ module uart_rx (
                     if (tick_16x) begin
                         if (tick_count == 4'd15) begin
                             tick_count <= 4'd0;
-                            // UART sends LSB first. Shift right and append at MSB.
                             shift_reg  <= {rx_line, shift_reg[7:1]};
                             bit_index  <= bit_index + 1'b1;
+                            
+                            // Latch completed byte to rx_data at bit 7
+                            if (bit_index == 3'd7) begin
+                                rx_data <= {rx_line, shift_reg[7:1]};
+                            end
                         end else begin
                             tick_count <= tick_count + 1'b1;
                         end
@@ -111,8 +113,7 @@ module uart_rx (
                 STOP: begin
                     if (tick_16x) begin
                         if (tick_count == 4'd15) begin
-                            rx_done <= 1'b1;        // Signal that data is valid
-                            rx_data <= shift_reg;   // Push internal shift_reg to output
+                            rx_done <= 1'b1; // Pulse done signal
                         end else begin
                             tick_count <= tick_count + 1'b1;
                         end
@@ -121,5 +122,4 @@ module uart_rx (
             endcase
         end
     end
-
 endmodule
